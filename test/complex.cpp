@@ -26,6 +26,9 @@ TEST_CASE ("Complex expansion") {
         REQUIRE (result[4] == "~/Pictures/*.gif");
         REQUIRE (result[5] == "~/Pictures/*.png");
     }
+    SECTION ("Expand \"~/{Downloads,Pictures/*.{jpg,gif,png}\"") {
+        REQUIRE_THROWS_AS (expand_brace ("~/{Downloads,Pictures/*.{jpg,gif,png}"), std::runtime_error) ;
+    }
     SECTION ("Expand \"It{{em,alic}iz,erat}e{d,}, please.\"") {
         auto && result = expand_brace ("It{{em,alic}iz,erat}e{d,}, please.") ;
         if (false) {
