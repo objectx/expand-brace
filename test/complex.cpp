@@ -28,17 +28,17 @@ TEST_CASE ("Complex expansion") {
     }
     SECTION ("Expand \"It{{em,alic}iz,erat}e{d,}, please.\"") {
         auto && result = expand_brace ("It{{em,alic}iz,erat}e{d,}") ;
-        if (true) {
+        if (false) {
             for (auto const & s : result) {
                 std::cerr << "> " << s << std::endl;
             }
         }
         REQUIRE (result.size () == 6) ;
-        REQUIRE (result [0] == "Itemized, please.") ;
-        REQUIRE (result [1] == "Itemize, please.") ;
-        REQUIRE (result [2] == "Italicized, please.") ;
-        REQUIRE (result [3] == "Italicize, please.") ;
-        REQUIRE (result [4] == "Iterated, please.") ;
-        REQUIRE (result [5] == "Iterate, please.") ;
+        REQUIRE (result [0] == "Itemized") ;
+        REQUIRE (result [1] == "Itemize") ;
+        REQUIRE (result [2] == "Italicized") ;
+        REQUIRE (result [3] == "Italicize") ;
+        REQUIRE (result [4] == "Iterated") ;
+        REQUIRE (result [5] == "Iterate") ;
     }
 }

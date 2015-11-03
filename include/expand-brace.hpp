@@ -26,6 +26,9 @@ public:
     }
 
     virtual std::vector<std::string> getValue () const = 0;
+    virtual void dump (std::ostream &output, int level = 0) const {
+        /* NO-OP */
+    }
 };
 
 class ConcatNode ;

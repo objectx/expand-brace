@@ -12,6 +12,25 @@
 
 using iterator_t = std::string::const_iterator;
 
+struct indent_ {
+    int level_ = 0 ;
+
+    indent_ (int lvl) : level_ { lvl } {
+        /* NO-OP */
+    }
+} ;
+
+std::ostream &  operator << (std::ostream &output, const indent_ &ind) {
+    for (int i = 0 ; i < ind.level_ ; ++i) {
+        output << "  " ;
+    }
+    return output ;
+}
+
+indent_ indent (int lvl) {
+    return indent_ { lvl } ;
+}
+
 class StringNode final : public BaseNode {
 private:
     std::string value_ ;
@@ -26,6 +45,9 @@ public:
     }
     std::vector<std::string>    getValue () const override {
         return std::vector<std::string> { value_ } ;
+    }
+    void dump (std::ostream &output, int level) const override {
+        output << indent (level) << (value_.empty () ? "<empty>" : value_) << std::endl ;
     }
 } ;
 
@@ -64,6 +86,14 @@ public:
     ListNode () {
         /* NO-OP */
     }
+    ListNode (std::vector<std::shared_ptr<BaseNode>> &&values) : values_ { std::move (values) } {
+        /* NO-OP */
+    }
+
+    ListNode (const std::vector<std::shared_ptr<BaseNode>> & values) : values_ { values } {
+        /* NO-OP */
+    }
+
     ListNode &  add (std::shared_ptr<BaseNode> value) {
         values_.emplace_back (value) ;
         return *this ;
@@ -76,6 +106,12 @@ public:
         }
         return result ;
     }
+    void dump (std::ostream &output, int level) const override {
+        output << indent (level) << "<list>" << std::endl ;
+        for (auto const &v : values_) {
+            v->dump (output, 1 + level) ;
+        }
+    }
 } ;
 
 
@@ -85,6 +121,14 @@ private:
 public:
     ~ConcatNode () override { /* NO-OP */ }
     ConcatNode () { /* NO-OP */ }
+
+    ConcatNode (std::vector<std::shared_ptr<BaseNode>> && values) : values_ { std::move (values) } {
+        /* NO-OP */
+    }
+
+    ConcatNode (const std::vector<std::shared_ptr<BaseNode>> &values) : values_ { values } {
+        /* NO-OP */
+    }
     ConcatNode &    add (std::shared_ptr<BaseNode> value) {
         values_.emplace_back (value) ;
         return *this ;
@@ -96,6 +140,13 @@ public:
             append_vector (result, children) ;
         }
         return result ;
+    }
+
+    void dump (std::ostream & output, int level) const override {
+        output << indent (level) << "<concat>" << std::endl ;
+        for (auto const & v : values_) {
+            v->dump (output, 1 + level);
+        }
     }
 };
 
@@ -140,7 +191,7 @@ parse_result_t<ListNode>   parse_list (iterator_t it, iterator_t it_end) {
             }
             return std::make_tuple (std::move (result), it + 1);
         default:
-            auto frag = parse_fragment (it, it_end) ;
+            auto frag = parse_fragments (it, it_end) ;
             result->add (std::get<0> (frag)) ;
             it = std::get<1> (frag) ;
             break ;
@@ -160,25 +211,36 @@ parse_result_t<BaseNode>   parse_fragment (iterator_t it, iterator_t it_end) {
 }
 
 parse_result_t<BaseNode>   parse_fragments (iterator_t it, iterator_t it_end) {
-    auto result = std::make_shared<ConcatNode> () ;
+    std::vector<std::shared_ptr<BaseNode>>  result ;
+
     while (it != it_end) {
-        auto frag = parse_fragment (it, it_end);
-        result->add (std::get<0> (frag)) ;
-        it = std::get<1> (frag) ;
+        std::shared_ptr<BaseNode>   frag ;
+        std::tie (frag, it) = parse_fragment (it, it_end) ;
+        result.emplace_back (frag) ;
         if (*it == ',' || *it == '}') {
-            return std::make_tuple (result, it) ;
+            switch (result.size ()) {
+            case 0:
+                return std::make_tuple (std::make_shared<StringNode> (), it);
+            case 1:
+                return std::make_tuple (result[0], it);
+            default:
+                break ;
+            }
+            return std::make_tuple (std::make_shared<ConcatNode> (std::move (result)), it);
         }
     }
-    return std::make_tuple (result, it) ;
+    return std::make_tuple (std::make_shared<ConcatNode> (std::move (result)), it) ;
 }
 
 std::vector<std::string>    expand_brace (const std::string &src) {
     if (src.empty ()) {
         return std::vector<std::string> {} ;
     }
-    auto result = parse_fragments (cbegin (src), cend (src)) ;
-    if (std::get<1> (result) != cend (src)) {
+    std::shared_ptr<BaseNode>   node ;
+    iterator_t it ;
+    std::tie (node, it) = parse_fragments (cbegin (src), cend (src)) ;
+    if (it != cend (src)) {
         throw std::runtime_error { std::string { "Syntax error in \""}.append (src).append ("\"") } ;
     }
-    return std::get<0> (result)->getValue () ;
+    return node->getValue () ;
 }
