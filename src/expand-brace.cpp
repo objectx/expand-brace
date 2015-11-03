@@ -18,17 +18,34 @@ namespace ExpandBrace {
     ParseResult<StringNode> parse_string (iterator_t it, iterator_t it_end, int level) {
         std::string result;
 
+        bool in_escape = false ;
         while (it != it_end) {
             switch (*it) {
+            case '\\':
+                if (in_escape) {
+                    goto onward ;
+                }
+                else {
+                    in_escape = true ;
+                }
+                break ;
             case '{':
             case '}':
+                if (in_escape) {
+                    goto onward ;
+                }
                 return ParseResult<StringNode> { std::make_unique<StringNode> (std::move (result)), it } ;
             case ',':
+                if (in_escape) {
+                    goto onward ;
+                }
                 if (0 < level) {
                     return ParseResult<StringNode> { std::make_unique<StringNode> (std::move (result)), it } ;
                 }
                 /*FALLTHROUGH*/
             default:
+            onward:
+                in_escape = false ;
                 result += *it;
                 ++it;
                 break;

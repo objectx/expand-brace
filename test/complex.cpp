@@ -44,4 +44,12 @@ TEST_CASE ("Complex expansion") {
         REQUIRE (result [4] == "Iterated, please.") ;
         REQUIRE (result [5] == "Iterate, please.") ;
     }
+    SECTION ("Expand \"{,{,gotta have{ ,\\, again\\, }}more }cowbell!\"") {
+        auto && result = expand_brace ("{,{,gotta have{ ,\\, again\\, }}more }cowbell!") ;
+        REQUIRE (result.size () == 4) ;
+        REQUIRE (result [0] == "cowbell!") ;
+        REQUIRE (result [1] == "more cowbell!") ;
+        REQUIRE (result [2] == "gotta have more cowbell!") ;
+        REQUIRE (result [3] == "gotta have\\, again\\, more cowbell!") ;
+    }
 }
