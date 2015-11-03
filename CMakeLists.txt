@@ -24,8 +24,8 @@ enable_testing ()
 
 include_directories (${CMAKE_CURRENT_BINARY_DIR})
 
-set (SOURCE_FILES src/expand-brace.cpp)
-set (HEADER_FILES include/expand-brace.hpp)
+set (SOURCE_FILES src/expand-brace.cpp src/node.cpp)
+set (HEADER_FILES include/expand-brace.hpp src/node.hpp)
 
 add_library (expand-brace STATIC ${SOURCE_FILES} ${HEADER_FILES})
     target_compile_features (expand-brace PUBLIC cxx_auto_type cxx_generic_lambdas)
