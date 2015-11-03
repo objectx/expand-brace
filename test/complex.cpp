@@ -27,18 +27,18 @@ TEST_CASE ("Complex expansion") {
         REQUIRE (result[5] == "~/Pictures/*.png");
     }
     SECTION ("Expand \"It{{em,alic}iz,erat}e{d,}, please.\"") {
-        auto && result = expand_brace ("It{{em,alic}iz,erat}e{d,}") ;
+        auto && result = expand_brace ("It{{em,alic}iz,erat}e{d,}, please") ;
         if (false) {
             for (auto const & s : result) {
                 std::cerr << "> " << s << std::endl;
             }
         }
         REQUIRE (result.size () == 6) ;
-        REQUIRE (result [0] == "Itemized") ;
-        REQUIRE (result [1] == "Itemize") ;
-        REQUIRE (result [2] == "Italicized") ;
-        REQUIRE (result [3] == "Italicize") ;
-        REQUIRE (result [4] == "Iterated") ;
-        REQUIRE (result [5] == "Iterate") ;
+        REQUIRE (result [0] == "Itemized, please") ;
+        REQUIRE (result [1] == "Itemize, please") ;
+        REQUIRE (result [2] == "Italicized, please") ;
+        REQUIRE (result [3] == "Italicize, please") ;
+        REQUIRE (result [4] == "Iterated, please") ;
+        REQUIRE (result [5] == "Iterate, please") ;
     }
 }

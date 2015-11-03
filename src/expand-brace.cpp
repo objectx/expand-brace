@@ -150,14 +150,19 @@ public:
     }
 };
 
-parse_result_t<StringNode> parse_string (iterator_t it, iterator_t it_end) {
+parse_result_t<StringNode> parse_string (iterator_t it, iterator_t it_end, int level) {
     std::string result;
+
     while (it != it_end) {
         switch (*it) {
         case '{':
-        case ',':
         case '}':
-            return std::make_tuple (std::make_shared<StringNode> (std::move (result)), it) ;
+            return std::make_tuple (std::make_shared<StringNode> (std::move (result)), it);
+        case ',':
+            if (0 < level) {
+                return std::make_tuple (std::make_shared<StringNode> (std::move (result)), it);
+            }
+            /*FALLTHROUGH*/
         default:
             result += *it;
             ++it;
@@ -167,7 +172,7 @@ parse_result_t<StringNode> parse_string (iterator_t it, iterator_t it_end) {
     return std::make_tuple (std::make_shared<StringNode> (std::move (result)), it) ;
 }
 
-parse_result_t<ListNode>   parse_list (iterator_t it, iterator_t it_end) {
+parse_result_t<ListNode> parse_list (iterator_t it, iterator_t it_end, int level) {
     auto result = std::make_shared<ListNode> () ;
     auto beg = it ;
 
@@ -191,7 +196,7 @@ parse_result_t<ListNode>   parse_list (iterator_t it, iterator_t it_end) {
             }
             return std::make_tuple (std::move (result), it + 1);
         default:
-            auto frag = parse_fragments (it, it_end) ;
+            auto frag = parse_fragments (it, it_end, level);
             result->add (std::get<0> (frag)) ;
             it = std::get<1> (frag) ;
             break ;
@@ -200,24 +205,24 @@ parse_result_t<ListNode>   parse_list (iterator_t it, iterator_t it_end) {
     return std::make_tuple (std::move (result), it) ;
 }
 
-parse_result_t<BaseNode>   parse_fragment (iterator_t it, iterator_t it_end) {
+parse_result_t<BaseNode> parse_fragment (iterator_t it, iterator_t it_end, int level) {
     if (*it == '{') {
         ++it ;
-        return parse_list (it, it_end);
+        return parse_list (it, it_end, level + 1);
     }
     else {
-        return parse_string (it, it_end);
+        return parse_string (it, it_end, level);
     }
 }
 
-parse_result_t<BaseNode>   parse_fragments (iterator_t it, iterator_t it_end) {
+parse_result_t<BaseNode> parse_fragments (iterator_t it, iterator_t it_end, int level) {
     std::vector<std::shared_ptr<BaseNode>>  result ;
 
     while (it != it_end) {
         std::shared_ptr<BaseNode>   frag ;
-        std::tie (frag, it) = parse_fragment (it, it_end) ;
+        std::tie (frag, it) = parse_fragment (it, it_end, level);
         result.emplace_back (frag) ;
-        if (*it == ',' || *it == '}') {
+        if (*it == '}' || (*it == ',' && 0 < level)) {
             switch (result.size ()) {
             case 0:
                 return std::make_tuple (std::make_shared<StringNode> (), it);
@@ -238,7 +243,7 @@ std::vector<std::string>    expand_brace (const std::string &src) {
     }
     std::shared_ptr<BaseNode>   node ;
     iterator_t it ;
-    std::tie (node, it) = parse_fragments (cbegin (src), cend (src)) ;
+    std::tie (node, it) = parse_fragments (cbegin (src), cend (src), 0);
     if (it != cend (src)) {
         throw std::runtime_error { std::string { "Syntax error in \""}.append (src).append ("\"") } ;
     }
