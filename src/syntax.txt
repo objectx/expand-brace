@@ -1,0 +1,11 @@
+fragments = (fragment)+
+          ;
+
+fragment = /* EMPTY */
+         | <string>
+         | '{' enumerates '}'
+         ;
+
+enumerates = fragments
+           | fragments (',' fragments)+
+           ;
