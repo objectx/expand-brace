@@ -27,6 +27,7 @@ namespace ExpandBrace {
                 }
                 else {
                     in_escape = true ;
+                    ++it ;
                 }
                 break ;
             case '{':
@@ -45,9 +46,15 @@ namespace ExpandBrace {
                 /*FALLTHROUGH*/
             default:
             onward:
+                if (in_escape) {
+                    result += '\\' ;
+                    result += *it ;
+                }
+                else {
+                    result += *it ;
+                }
                 in_escape = false ;
-                result += *it;
-                ++it;
+                ++it ;
                 break;
             }
         }
