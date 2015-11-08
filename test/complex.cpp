@@ -10,7 +10,7 @@
 #include <expand-brace.hpp>
 #include <iostream>
 
-TEST_CASE ("Complex expansion") {
+TEST_CASE ("Complex expansion", "[complex]") {
     SECTION ("Expand \"~/{Downloads,Pictures}/*.{jpg,gif,png}\"") {
         auto && result = expand_brace ("~/{Downloads,Pictures}/*.{jpg,gif,png}") ;
         if (false) {
