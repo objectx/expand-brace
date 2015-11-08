@@ -11,7 +11,7 @@
 
 using namespace std ;
 
-TEST_CASE ("simple expansion", "[expand-brace]") {
+TEST_CASE ("simple expansion", "[simple]") {
     SECTION ("Empty string") {
         auto && result = expand_brace ("");
         REQUIRE (result.size () == 0) ;
