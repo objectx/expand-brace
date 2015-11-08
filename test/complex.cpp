@@ -10,7 +10,7 @@
 #include <expand-brace.hpp>
 #include <iostream>
 
-TEST_CASE ("Complex expansion") {
+TEST_CASE ("Complex expansion", "[complex]") {
     SECTION ("Expand \"~/{Downloads,Pictures}/*.{jpg,gif,png}\"") {
         auto && result = expand_brace ("~/{Downloads,Pictures}/*.{jpg,gif,png}") ;
         if (false) {
@@ -27,7 +27,11 @@ TEST_CASE ("Complex expansion") {
         REQUIRE (result[5] == "~/Pictures/*.png");
     }
     SECTION ("Expand \"~/{Downloads,Pictures/*.{jpg,gif,png}\"") {
-        REQUIRE_THROWS_AS (expand_brace ("~/{Downloads,Pictures/*.{jpg,gif,png}"), std::runtime_error) ;
+        auto && result = expand_brace ("~/{Downloads,Pictures/*.{jpg,gif,png}");
+        REQUIRE (result.size () == 3) ;
+        REQUIRE (result[0] == "~/{Downloads,Pictures/*.jpg");
+        REQUIRE (result[1] == "~/{Downloads,Pictures/*.gif");
+        REQUIRE (result[2] == "~/{Downloads,Pictures/*.png");
     }
     SECTION ("Expand \"It{{em,alic}iz,erat}e{d,}, please.\"") {
         auto && result = expand_brace ("It{{em,alic}iz,erat}e{d,}, please.") ;
@@ -43,5 +47,22 @@ TEST_CASE ("Complex expansion") {
         REQUIRE (result [3] == "Italicize, please.") ;
         REQUIRE (result [4] == "Iterated, please.") ;
         REQUIRE (result [5] == "Iterate, please.") ;
+    }
+    SECTION ("Expand \"{,{,gotta have{ ,\\, again\\, }}more }cowbell!\"") {
+        auto && result = expand_brace ("{,{,gotta have{ ,\\, again\\, }}more }cowbell!") ;
+        REQUIRE (result.size () == 4) ;
+        REQUIRE (result [0] == "cowbell!") ;
+        REQUIRE (result [1] == "more cowbell!") ;
+        REQUIRE (result [2] == "gotta have more cowbell!") ;
+        REQUIRE (result [3] == "gotta have\\, again\\, more cowbell!") ;
+    }
+}
+
+TEST_CASE ("Edge case", "[edge]") {
+    SECTION ("Expand \"{}} some }{,{\\\\{ edge, edge} \\,}{ cases, {here} \\\\\\\\\\}\"") {
+        auto && result = expand_brace ("{}} some }{,{\\\\{ edge, edge} \\,}{ cases, {here} \\\\\\\\\\}");
+        REQUIRE (result.size () == 2);
+        REQUIRE (result[0] == "{}} some }{,{\\\\ edge \\,}{ cases, {here} \\\\\\\\\\}");
+        REQUIRE (result[1] == "{}} some }{,{\\\\ edge \\,}{ cases, {here} \\\\\\\\\\}");
     }
 }

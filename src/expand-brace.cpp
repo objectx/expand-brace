@@ -6,6 +6,7 @@
  */
 #include <iterator>
 #include <tuple>
+#include <utility>
 #include <iostream>
 #include <assert.h>
 #include "expand-brace.hpp"
@@ -15,59 +16,103 @@ using iterator_t = std::string::const_iterator;
 
 namespace ExpandBrace {
 
+    template <typename T_, typename A_>
+        ParseResult<T_> make_parse_result (A_ && result, iterator_t it) {
+            return ParseResult<T_> { std::make_unique<T_> (std::forward<A_> (result)), it } ;
+        }
+
     ParseResult<StringNode> parse_string (iterator_t it, iterator_t it_end, int level) {
         std::string result;
 
+        bool in_escape = false ;
         while (it != it_end) {
             switch (*it) {
+            case '\\':
+                if (in_escape) {
+                    goto onward ;
+                }
+                else {
+                    in_escape = true ;
+                    ++it ;
+                }
+                break ;
             case '{':
             case '}':
-                return ParseResult<StringNode> { std::make_unique<StringNode> (std::move (result)), it } ;
+                if (in_escape) {
+                    goto onward ;
+                }
+                return make_parse_result<StringNode> (std::move (result), it) ;
             case ',':
+                if (in_escape) {
+                    goto onward ;
+                }
                 if (0 < level) {
-                    return ParseResult<StringNode> { std::make_unique<StringNode> (std::move (result)), it } ;
+                    return make_parse_result<StringNode> (std::move (result), it) ;
                 }
                 /*FALLTHROUGH*/
             default:
-                result += *it;
-                ++it;
+            onward:
+                if (in_escape) {
+                    result += '\\' ;
+                    result += *it ;
+                }
+                else {
+                    result += *it ;
+                }
+                in_escape = false ;
+                ++it ;
                 break;
             }
         }
-        return ParseResult<StringNode> { std::make_unique<StringNode> (std::move (result)), it };
+        return make_parse_result<StringNode> (std::move (result), it) ;
     }
 
-    ParseResult<ListNode> parse_list (iterator_t it, iterator_t it_end, int level) {
-        auto result = std::make_unique<ListNode> ();
+    ParseResult<BaseNode> parse_list (iterator_t it, iterator_t it_end, int level) {
+        std::vector<std::unique_ptr<BaseNode>>  result ;
         auto beg    = it;
 
+        int prev_ch = -1 ;
         while (it != it_end) {
             switch (*it) {
             case ',':
                 if (it == beg) {
                     // Handle "{," case
-                    result->add (std::make_unique<StringNode> ());
+                    result.emplace_back (std::make_unique<StringNode> ()) ;
                 }
+                prev_ch = *it;
                 ++it;
                 break;
             case '}':
-                if (it == beg) {
-                    // Handle "{}" case
-                    return ParseResult<ListNode> { std::move (result), it + 1 } ;
-                }
-                if (*(it - 1) == ',') {
+                if (prev_ch == ',') {
                     // Handle "ABC,}" case
-                    result->add (std::make_unique<StringNode> ());
+                    result.emplace_back (std::make_unique<StringNode> ());
                 }
-                return ParseResult<ListNode> { std::move (result), it + 1 } ;
+                if (result.size () <= 1) {
+                    // Special case
+                    result.insert (result.cbegin (), std::make_unique<StringNode> (std::string { "{" })) ;
+                    result.emplace_back (std::make_unique<StringNode> (std::string { "}" })) ;
+                    return make_parse_result<ConcatNode> (std::move (result), it + 1) ;
+                }
+                return make_parse_result<ListNode> (std::move (result), it + 1) ;
             default:
                 auto frag = parse_fragments (it, it_end, level);
-                result->add (std::move (frag.value)) ;
+                result.emplace_back (std::move (frag.value)) ;
+                prev_ch = -1 ;
                 it = frag.next ;
                 break;
             }
         }
-        throw std::runtime_error { std::string { "Unmatched brace" } };
+        std::vector<std::unique_ptr<BaseNode>> tmp ;
+        tmp.reserve (1 + 2 * result.size ()) ;
+        tmp.emplace_back (std::make_unique<StringNode> (std::string { '{' })) ;
+        if (! result.empty ()) {
+            tmp.emplace_back (std::move (result [0])) ;
+            for (int i = 1 ; i < result.size () ; ++i) {
+                tmp.emplace_back (std::make_unique<StringNode> (std::string { ',' }));
+                tmp.emplace_back (std::move (result [i])) ;
+            }
+        }
+        return make_parse_result<ConcatNode> (std::move (tmp), it) ;
     }
 
     ParseResult<BaseNode> parse_fragment (iterator_t it, iterator_t it_end, int level) {
@@ -84,22 +129,34 @@ namespace ExpandBrace {
         std::vector<std::unique_ptr<BaseNode>> result;
 
         while (it != it_end) {
+            //std::cerr << " in> " << std::string (it, it_end) << std::endl;
             auto frag = parse_fragment (it, it_end, level);
+            //frag.value->dump (std::cerr);
+            //std::cerr << "out> " << std::string (frag.next, it_end) << std::endl;
             result.emplace_back (std::move (frag.value));
             it = frag.next ;
-            if (*it == '}' || (*it == ',' && 0 < level)) {
-                switch (result.size ()) {
-                case 0:
-                    return ParseResult<BaseNode> { std::make_unique<StringNode> (), it } ;
-                case 1:
-                    return ParseResult<BaseNode> { std::move (result [0]), it } ;
-                default:
-                    break;
+            if (level == 0) {
+                // Level 0's '}' and ',' are considered as itself
+                if (*it == '}' || *it == ',') {
+                    result.emplace_back (std::make_unique<StringNode> (std::string { it, it + 1 })) ;
+                    ++it ;
                 }
-                return ParseResult<BaseNode> { std::make_unique<ConcatNode> (std::move (result)), it } ;
+            }
+            else {
+                if (*it == '}' || *it == ',') {
+                    switch (result.size ()) {
+                    case 0:
+                        return ParseResult<StringNode> { std::make_unique<StringNode> (), it };
+                    case 1:
+                        return ParseResult<BaseNode> { std::move (result[0]), it };
+                    default:
+                        break;
+                    }
+                    return make_parse_result<ConcatNode> (std::move (result), it) ;
+                }
             }
         }
-        return ParseResult<BaseNode> { std::make_unique<ConcatNode> (std::move (result)), it } ;
+        return make_parse_result<ConcatNode> (std::move (result), it) ;
     }
 }
 

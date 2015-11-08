@@ -42,7 +42,7 @@ namespace ExpandBrace {
             /* NO-OP */
         }
 
-        StringNode (const std::string & s) : StringNode { std::string { s }} {
+        StringNode (const std::string & s) : StringNode { std::string { s } } {
             /* NO-OP */
         }
 
@@ -71,6 +71,14 @@ namespace ExpandBrace {
         ListNode & add (std::unique_ptr<BaseNode> && value) {
             values_.emplace_back (std::move (value));
             return *this;
+        }
+
+        size_t size () const {
+            return values_.size ();
+        }
+
+        bool empty () const {
+            return values_.empty ();
         }
 
         std::vector<std::string> getValue () const override {
@@ -111,41 +119,43 @@ namespace ExpandBrace {
 
     template <typename T_>
         struct ParseResult {
-            std::unique_ptr<T_> value ;
-            std::string::const_iterator next ;
+            std::unique_ptr<T_>         value;
+            std::string::const_iterator next;
 
             ~ParseResult () {
                 /* NO-OP */
             }
 
             template <typename U_>
-                ParseResult (ParseResult<U_> &&src) : value { std::move (src.value) }, next { std::move (src.next) } {
+                ParseResult (ParseResult<U_> && src)
+                        : value { std::move (src.value) }
+                        , next { std::move (src.next) } {
                     /* NO-OP */
                 }
 
             template <typename U_>
-                ParseResult (std::unique_ptr<U_> &&val, std::string::const_iterator it)
+                ParseResult (std::unique_ptr<U_> && val, std::string::const_iterator it)
                         : value { std::move (val) }
-                        , next { it } {
+                        , next  { it } {
                     /* NO-OP */
                 }
-        } ;
+        };
 
     ParseResult<StringNode> parse_string ( std::string::const_iterator it
                                          , std::string::const_iterator it_end
                                          , int level);
 
-    ParseResult<ListNode>   parse_list ( std::string::const_iterator it
-                                       , std::string::const_iterator it_end
-                                       , int level);
+    ParseResult<BaseNode> parse_list ( std::string::const_iterator it
+                                     , std::string::const_iterator it_end
+                                     , int level);
 
-    ParseResult<BaseNode>   parse_fragment ( std::string::const_iterator it
-                                           , std::string::const_iterator it_end
-                                           , int level);
+    ParseResult<BaseNode> parse_fragment ( std::string::const_iterator it
+                                         , std::string::const_iterator it_end
+                                         , int level);
 
-    ParseResult<BaseNode>   parse_fragments ( std::string::const_iterator it
-                                            , std::string::const_iterator it_end
-                                            , int level);
+    ParseResult<BaseNode> parse_fragments ( std::string::const_iterator it
+                                          , std::string::const_iterator it_end
+                                          , int level);
 }   /* ExpandBrace */
 
 #endif /* node_hpp__97AD1C80_A899_4857_8C71_A3667AD34CC8 */
