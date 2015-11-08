@@ -73,6 +73,14 @@ namespace ExpandBrace {
             return *this;
         }
 
+        size_t size () const {
+            return values_.size ();
+        }
+
+        bool empty () const {
+            return values_.empty ();
+        }
+
         std::vector<std::string> getValue () const override {
             std::vector<std::string> result;
             for (auto const & v : values_) {
