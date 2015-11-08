@@ -6,6 +6,7 @@
  */
 #include <iterator>
 #include <tuple>
+#include <utility>
 #include <iostream>
 #include <assert.h>
 #include "expand-brace.hpp"
@@ -14,6 +15,11 @@
 using iterator_t = std::string::const_iterator;
 
 namespace ExpandBrace {
+
+    template <typename T_, typename A_>
+        ParseResult<T_> make_parse_result (A_ && result, iterator_t it) {
+            return ParseResult<T_> { std::make_unique<T_> (std::forward<A_> (result)), it } ;
+        }
 
     ParseResult<StringNode> parse_string (iterator_t it, iterator_t it_end, int level) {
         std::string result;
@@ -35,13 +41,13 @@ namespace ExpandBrace {
                 if (in_escape) {
                     goto onward ;
                 }
-                return ParseResult<StringNode> { std::make_unique<StringNode> (std::move (result)), it } ;
+                return make_parse_result<StringNode> (std::move (result), it) ;
             case ',':
                 if (in_escape) {
                     goto onward ;
                 }
                 if (0 < level) {
-                    return ParseResult<StringNode> { std::make_unique<StringNode> (std::move (result)), it } ;
+                    return make_parse_result<StringNode> (std::move (result), it) ;
                 }
                 /*FALLTHROUGH*/
             default:
@@ -58,7 +64,7 @@ namespace ExpandBrace {
                 break;
             }
         }
-        return ParseResult<StringNode> { std::make_unique<StringNode> (std::move (result)), it };
+        return make_parse_result<StringNode> (std::move (result), it) ;
     }
 
     ParseResult<BaseNode> parse_list (iterator_t it, iterator_t it_end, int level) {
@@ -85,9 +91,9 @@ namespace ExpandBrace {
                     // Special case
                     result.insert (result.cbegin (), std::make_unique<StringNode> (std::string { "{" })) ;
                     result.emplace_back (std::make_unique<StringNode> (std::string { "}" })) ;
-                    return ParseResult<ConcatNode> { std::make_unique<ConcatNode> (std::move (result)), it + 1 } ;
+                    return make_parse_result<ConcatNode> (std::move (result), it + 1) ;
                 }
-                return ParseResult<ListNode> { std::make_unique<ListNode> (std::move (result)), it + 1 } ;
+                return make_parse_result<ListNode> (std::move (result), it + 1) ;
             default:
                 auto frag = parse_fragments (it, it_end, level);
                 result.emplace_back (std::move (frag.value)) ;
@@ -97,7 +103,7 @@ namespace ExpandBrace {
             }
         }
         std::vector<std::unique_ptr<BaseNode>> tmp ;
-        tmp.reserve (1 + 2 * result.size () + 1) ;
+        tmp.reserve (1 + 2 * result.size ()) ;
         tmp.emplace_back (std::make_unique<StringNode> (std::string { '{' })) ;
         if (! result.empty ()) {
             tmp.emplace_back (std::move (result [0])) ;
@@ -106,8 +112,7 @@ namespace ExpandBrace {
                 tmp.emplace_back (std::move (result [i])) ;
             }
         }
-        return ParseResult<ConcatNode> { std::make_unique<ConcatNode> (std::move (tmp)), it };
-        //throw std::runtime_error { std::string { "Unmatched brace" } };
+        return make_parse_result<ConcatNode> (std::move (tmp), it) ;
     }
 
     ParseResult<BaseNode> parse_fragment (iterator_t it, iterator_t it_end, int level) {
@@ -141,17 +146,17 @@ namespace ExpandBrace {
                 if (*it == '}' || *it == ',') {
                     switch (result.size ()) {
                     case 0:
-                        return ParseResult<BaseNode> { std::make_unique<StringNode> (), it };
+                        return ParseResult<StringNode> { std::make_unique<StringNode> (), it };
                     case 1:
                         return ParseResult<BaseNode> { std::move (result[0]), it };
                     default:
                         break;
                     }
-                    return ParseResult<BaseNode> { std::make_unique<ConcatNode> (std::move (result)), it };
+                    return make_parse_result<ConcatNode> (std::move (result), it) ;
                 }
             }
         }
-        return ParseResult<BaseNode> { std::make_unique<ConcatNode> (std::move (result)), it } ;
+        return make_parse_result<ConcatNode> (std::move (result), it) ;
     }
 }
 
