@@ -102,17 +102,16 @@ namespace ExpandBrace {
                 break;
             }
         }
-        std::vector<std::unique_ptr<BaseNode>> tmp ;
-        tmp.reserve (1 + 2 * result.size ()) ;
-        tmp.emplace_back (std::make_unique<StringNode> (std::string { '{' })) ;
-        if (! result.empty ()) {
-            tmp.emplace_back (std::move (result [0])) ;
-            for (int i = 1 ; i < result.size () ; ++i) {
-                tmp.emplace_back (std::make_unique<StringNode> (std::string { ',' }));
-                tmp.emplace_back (std::move (result [i])) ;
+        // Restore lost ','s
+        if (2 <= result.size ()) {
+            auto cnt = result.size () - 1 ;
+            for (int i = 0 ; i < cnt ; ++i) {
+                auto pos = result.cbegin () + 2 * i + 1 ;
+                result.emplace (pos, std::make_unique<StringNode> (std::string { ',' })) ;
             }
         }
-        return make_parse_result<ConcatNode> (std::move (tmp), it) ;
+        result.emplace (result.cbegin (), std::make_unique<StringNode> (std::string { '{' })) ;
+        return make_parse_result<ConcatNode> (std::move (result), it) ;
     }
 
     ParseResult<BaseNode> parse_fragment (iterator_t it, iterator_t it_end, int level) {
