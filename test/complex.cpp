@@ -65,4 +65,9 @@ TEST_CASE ("Edge case", "[edge]") {
         REQUIRE (result[0] == "{}} some }{,{\\\\ edge \\,}{ cases, {here} \\\\\\\\\\}");
         REQUIRE (result[1] == "{}} some }{,{\\\\ edge \\,}{ cases, {here} \\\\\\\\\\}");
     }
+    SECTION ("Expand \"{a,b,c,d,e\"") {
+        auto && result = expand_brace ("{a,b,c,d,e") ;
+        REQUIRE (result.size () == 1) ;
+        REQUIRE (result [0] == "{a,b,c,d,e") ;
+    }
 }
