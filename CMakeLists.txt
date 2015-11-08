@@ -30,5 +30,6 @@ set (HEADER_FILES include/expand-brace.hpp src/node.hpp)
 add_library (expand-brace STATIC ${SOURCE_FILES} ${HEADER_FILES})
     target_compile_features (expand-brace PUBLIC cxx_auto_type cxx_generic_lambdas)
     target_include_directories (expand-brace PUBLIC ${PROJECT_SOURCE_DIR}/include)
+    target_compile_definitions (expand-brace PRIVATE $<$<CONFIG:Debug>:EXPAND_BRACE_DEBUG=1>)
 
 add_subdirectory (test)
