@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include "node.hpp"
+
 namespace {
 
     struct indent_ {
@@ -59,6 +60,7 @@ namespace {
 
 namespace ExpandBrace {
 
+#if EXPAND_BRACE_DEBUG
     void BaseNode::dump (std::ostream & output, int level) const {
         /* NO-OP */
     }
@@ -73,6 +75,7 @@ namespace ExpandBrace {
             v->dump (output, 1 + level);
         }
     }
+#endif
 
     std::vector<std::string> ConcatNode::getValue () const {
         std::vector<std::string> result;
@@ -83,10 +86,12 @@ namespace ExpandBrace {
         return result;
     }
 
+#if EXPAND_BRACE_DEBUG
     void ConcatNode::dump (std::ostream & output, int level) const {
         output << indent (level) << "<concat>" << std::endl;
         for (auto const & v : values_) {
             v->dump (output, 1 + level);
         }
     }
+#endif
 }

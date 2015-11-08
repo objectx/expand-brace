@@ -6,9 +6,7 @@
  */
 #include <iterator>
 #include <tuple>
-#include <utility>
 #include <iostream>
-#include <assert.h>
 #include "expand-brace.hpp"
 #include "node.hpp"
 
@@ -20,6 +18,10 @@ namespace ExpandBrace {
         ParseResult<T_> make_parse_result (A_ && result, iterator_t it) {
             return ParseResult<T_> { std::make_unique<T_> (std::forward<A_> (result)), it } ;
         }
+
+    auto make_string_node (char ch) -> decltype (auto) {
+        return std::make_unique<StringNode> (std::string { ch }) ;
+    }
 
     ParseResult<StringNode> parse_string (iterator_t it, iterator_t it_end, int level) {
         std::string result;
@@ -89,8 +91,8 @@ namespace ExpandBrace {
                 }
                 if (result.size () <= 1) {
                     // Special case
-                    result.insert (result.cbegin (), std::make_unique<StringNode> (std::string { "{" })) ;
-                    result.emplace_back (std::make_unique<StringNode> (std::string { "}" })) ;
+                    result.insert (result.cbegin (), make_string_node ('{')) ;
+                    result.emplace_back (make_string_node ('}')) ;
                     return make_parse_result<ConcatNode> (std::move (result), it + 1) ;
                 }
                 return make_parse_result<ListNode> (std::move (result), it + 1) ;
@@ -107,10 +109,10 @@ namespace ExpandBrace {
             auto cnt = result.size () - 1 ;
             for (int i = 0 ; i < cnt ; ++i) {
                 auto pos = result.cbegin () + 2 * i + 1 ;
-                result.emplace (pos, std::make_unique<StringNode> (std::string { ',' })) ;
+                result.emplace (pos, make_string_node (',')) ;
             }
         }
-        result.emplace (result.cbegin (), std::make_unique<StringNode> (std::string { '{' })) ;
+        result.emplace (result.cbegin (), make_string_node ('{')) ;
         return make_parse_result<ConcatNode> (std::move (result), it) ;
     }
 

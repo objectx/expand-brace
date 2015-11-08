@@ -5,8 +5,6 @@
  * Copyright (c) 2015 Masashi Fujita
  */
 #include "catch.hpp"
-#include <iterator>
-#include <set>
 #include <expand-brace.hpp>
 #include <iostream>
 

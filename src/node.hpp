@@ -8,9 +8,18 @@
 #ifndef node_hpp__97AD1C80_A899_4857_8C71_A3667AD34CC8
 #define node_hpp__97AD1C80_A899_4857_8C71_A3667AD34CC8  1
 
-#include <iosfwd>
 #include <string>
 #include <vector>
+#include <iosfwd>
+
+#ifdef NDEBUG
+#   undef   EXPAND_BRACE_DEBUG
+#   define  EXPAND_BRACE_DEBUG  1
+#endif
+
+#ifndef EXPAND_BRACE_DEBUG
+#   define  EXPAND_BRACE_DEBUG  0
+#endif
 
 namespace ExpandBrace {
 
@@ -26,7 +35,9 @@ namespace ExpandBrace {
 
         virtual std::vector<std::string> getValue () const = 0;
 
+#if EXPAND_BRACE_DEBUG
         virtual void dump (std::ostream & output, int level = 0) const;
+#endif
     };
 
 
@@ -49,8 +60,9 @@ namespace ExpandBrace {
         std::vector<std::string> getValue () const override {
             return std::vector<std::string> { value_ };
         }
-
+#if EXPAND_BRACE_DEBUG
         void dump (std::ostream & output, int level) const override;
+#endif
     };
 
 
@@ -89,8 +101,9 @@ namespace ExpandBrace {
             }
             return result;
         }
-
+#if EXPAND_BRACE_DEBUG
         void dump (std::ostream & output, int level) const;
+#endif
     };
 
 
@@ -112,8 +125,9 @@ namespace ExpandBrace {
         }
 
         std::vector<std::string> getValue () const;
-
+#if EXPAND_BRACE_DEBUG
         void dump (std::ostream & output, int level) const;
+#endif
     };
 
 
