@@ -143,9 +143,9 @@ namespace ExpandBrace {
                                          , std::string::const_iterator it_end
                                          , int level);
 
-    ParseResult<ListNode>   parse_list ( std::string::const_iterator it
-                                       , std::string::const_iterator it_end
-                                       , int level);
+    ParseResult<BaseNode> parse_list ( std::string::const_iterator it
+                                     , std::string::const_iterator it_end
+                                     , int level);
 
     ParseResult<BaseNode>   parse_fragment ( std::string::const_iterator it
                                            , std::string::const_iterator it_end
