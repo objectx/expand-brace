@@ -8,6 +8,7 @@
 #ifndef node_hpp__97AD1C80_A899_4857_8C71_A3667AD34CC8
 #define node_hpp__97AD1C80_A899_4857_8C71_A3667AD34CC8  1
 
+#include <memory>
 #include <string>
 #include <vector>
 #include <iosfwd>
